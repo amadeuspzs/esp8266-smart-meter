@@ -7,9 +7,10 @@
 
 // Sensor configuration
 #define optical D1
-#define ppwh 1/3.2 //3200 pulses/kWh = 1/3.2 pulse per Wh
+#define pp_kwh 3200 // 3200 pulses/kWh
+#define jp_impulse (3600 * 1000/pp_kwh) // Joules per impulse
+#define sample_ms 5000 // how often to sample power
 
 // Reporting
 #define mqtt_server "0.0.0.0"
 #define power_topic device "/power"
-#define energy_topic device "/energy"
