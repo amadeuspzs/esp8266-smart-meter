@@ -82,12 +82,15 @@ void loop()
 
   if (timeElapsed >= sample_ms) { // every 5 seconds   
 
+    // reset timer
+    lastMessage = currentTime;
+    
     // calculate power
     power = jouleCount / (timeElapsed/1000);
     
-    // reset counters
+    // reset counter
     jouleCount = 0;
-    lastMessage = currentTime;
+    
 
     // connect to MQTT server
     if (!client.connected()) {
