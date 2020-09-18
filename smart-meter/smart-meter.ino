@@ -27,6 +27,10 @@ unsigned long currentTime, lastMessage, timeElapsed;
 // power and energy
 double power, elapsedkWh, T;
 
+// For more accurate power average
+double powerAccumulator, powerAverage;
+long powerAccumulatorCount;
+
 void setup()
 {
   Serial.begin(115200);
@@ -79,7 +83,15 @@ void loop()
   currentTime = millis();
   timeElapsed = currentTime - lastMessage;
 
-  if (timeElapsed >= 5000) { // every 5 seconds
+  if (timeElapsed >= 5000) { // every 5 seconds   
+
+    // calculate average power reading since last publication
+    // note this will skew for higher powers as there will be more counts
+    // at a higher power level
+    powerAverage = powerAccumulator / powerAccumulatorCount;
+    powerAccumulator = 0.0;
+    powerAccumulatorCount = 0;
+
     // connect to MQTT server
     if (!client.connected()) {
       Serial.print("Attempting MQTT connection...");
@@ -95,7 +107,7 @@ void loop()
     } // end if client.connected
     Serial.println("Publishing to MQTT...");    
      // publish new reading
-    client.publish(power_topic, String(power/1000.0).c_str(), true);
+    client.publish(power_topic, String(powerAverage/1000.0).c_str(), true);
     client.publish(energy_topic, String(elapsedkWh).c_str(), true);
     lastMessage = millis();
   } else {
@@ -120,4 +132,7 @@ ICACHE_RAM_ATTR void onPulse()
   
   //Find kwh elapsed (kWh)
   elapsedkWh = (1.0*pulseCount/(ppwh*1000)); //multiply by 1000 to convert pulses per wh to kwh
+
+  powerAccumulator += power;
+  powerAccumulatorCount += 1;
 }
