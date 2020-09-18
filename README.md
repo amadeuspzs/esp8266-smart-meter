@@ -15,4 +15,4 @@ Hardware/software based on https://openenergymonitor.org/
 
 ## Flowchart
 
-![esp8266-smart-meter.png]
+![v1 flow](esp8266-smart-meter.png)
