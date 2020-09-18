@@ -5,6 +5,8 @@
  *
  * Designed for integration with HomeAssistant
  *
+ * v3
+ * 
  */
 
 #include <ESP8266WiFi.h>
@@ -15,21 +17,14 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// Number of pulses, used to measure energy.
-long pulseCount = 0;
-
-// Used to measure power.
-unsigned long pulseTime,lastTime;
+// Power measurement
+int jouleCount = 0;
 
 // Used to track MQTT message publication
 unsigned long currentTime, lastMessage, timeElapsed;
 
-// power and energy
-double power, elapsedkWh, T;
-
-// For more accurate power average
-double powerAccumulator, powerAverage;
-long powerAccumulatorCount;
+// power
+double power;
 
 void setup()
 {
@@ -76,6 +71,8 @@ void setup()
   
   // KWH interrupt attached to IRQ 1 = D1 = GPIO5
   attachInterrupt(digitalPinToInterrupt(optical), onPulse, FALLING);
+
+  lastMessage = millis();
 }
 
 void loop()
@@ -83,14 +80,14 @@ void loop()
   currentTime = millis();
   timeElapsed = currentTime - lastMessage;
 
-  if (timeElapsed >= 5000) { // every 5 seconds   
+  if (timeElapsed >= sample_ms) { // every 5 seconds   
 
-    // calculate average power reading since last publication
-    // note this will skew for higher powers as there will be more counts
-    // at a higher power level
-    powerAverage = powerAccumulator / powerAccumulatorCount;
-    powerAccumulator = 0.0;
-    powerAccumulatorCount = 0;
+    // calculate power
+    power = jouleCount / (timeElapsed/1000);
+    
+    // reset counters
+    jouleCount = 0;
+    lastMessage = currentTime;
 
     // connect to MQTT server
     if (!client.connected()) {
@@ -106,12 +103,10 @@ void loop()
       } //end if client.connect
     } // end if client.connected
     Serial.println("Publishing to MQTT...");    
-     // publish new reading
-    client.publish(power_topic, String(powerAverage/1000.0).c_str(), true);
-    client.publish(energy_topic, String(elapsedkWh).c_str(), true);
-    lastMessage = millis();
+     // publish power (kWh)
+    client.publish(power_topic, String(power/1000.0).c_str(), true);
   } else {
-    // Serial.println("Not time to publish yet, waiting");
+    delay(100);
   } // end if it's time to publish
 }
 
@@ -119,20 +114,6 @@ void loop()
 // Needs ICACHE_RAM_ATTR for esp8266 architecture
 ICACHE_RAM_ATTR void onPulse()
 {
-  //used to measure time between pulses.
-  lastTime = pulseTime;
-  pulseTime = micros();
-  T = (pulseTime - lastTime)/1000000.0; // in s
-  
   //pulseCounter
-  pulseCount++;
-  
-  //Calculate power (W)
-  power = (3600 * ppwh) / T;
-  
-  //Find kwh elapsed (kWh)
-  elapsedkWh = (1.0*pulseCount/(ppwh*1000)); //multiply by 1000 to convert pulses per wh to kwh
-
-  powerAccumulator += power;
-  powerAccumulatorCount += 1;
+  jouleCount += jp_impulse;
 }

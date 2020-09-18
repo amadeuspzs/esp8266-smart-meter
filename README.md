@@ -25,4 +25,10 @@ Timer-based circuit that publishes average of all readings every 5 seconds.
 
 Note this skews towards higher power readings as these interrupt at a higher frequency and will be represented more often in the accumulator.
 
-![v1 flow](esp8266-smart-meter-v2.png)
+![v2 flow](esp8266-smart-meter-v2.png)
+
+## v3
+
+Timer-based circuit that counts joules (pulses) and reports the average (watts) every 5 seconds.
+
+![v3 flow](esp8266-smart-meter-v3.png)
