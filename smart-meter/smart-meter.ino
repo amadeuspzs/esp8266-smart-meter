@@ -25,10 +25,6 @@ unsigned long currentTime, lastMessage, timeElapsed;
 
 // power
 double power, T;
-
-// CT sensor
-int min_, max_, sensor;
-double voltage, current, power_ct;
     
 void setup()
 {
@@ -81,38 +77,7 @@ void loop()
     T = (pulseTime - lastTime)/1000000.0; // in s
     power = (3600 * ppwh) / T;
 
-    // calculate CT power
-
-    // 50Hz = 0.02s per peak = 20ms per cycle
-    // In total capture 5 cycles not to slow down the whole system too much (100ms)
-    // emonlib.h use 1480 samples with no delay
-    min_ = 1023;
-    max_ = 0;  
-    for (int i = 0; i<samples; i++) {
-      // offset reading
-      sensor = analogRead(ct) - (1024/2);
-      min_ = (sensor < min_) ? sensor : min_;
-      max_ = (sensor > max_) ? sensor : max_;    
-    }
-  
-    // max reading is 1023 @ 3.3V
-    // extra offset of -1 to deal with ADC calibration
-    voltage = 3.3 * ( float(max_-min_-1) / 1024.0);
-    
-    // 100A:50mA with 22 ohm burden resistor
-    current = (100.0/3.11) * voltage;
-    power_ct = 240.0 * current; // assume 240V - RMS?
-
     if (debug) {
-      Serial.print(voltage*1000.0);
-      Serial.println(" mV"); 
-    
-      Serial.print(current,3);
-      Serial.println(" A");
-    
-      Serial.print(power_ct,3);
-      Serial.println(" W"); 
-  
       Serial.print(power,3);
       Serial.println(" W");
     }
@@ -135,7 +100,6 @@ void loop()
     if (debug) Serial.println("Publishing to MQTT...");    
     // publish new reading
     client.publish(power_topic, String(power).c_str(), true);
-    client.publish(power_ct_topic, String(power_ct).c_str(), true);
   } else {
     delay(100);
   } // end if it's time to publish 
