@@ -19,13 +19,14 @@ PubSubClient client(espClient);
 long pulseCount = 0;
 
 // Used to measure power.
-unsigned long pulseTime,lastTime;
+unsigned long pulseTime, lastTime;
 
 // Used to track MQTT message publication
 unsigned long currentTime, lastMessage, timeElapsed;
 
 // power and energy
-double power, elapsedkWh, T;
+volatile double power, elapsedkWh;
+double T;
 
 void setup()
 {
@@ -72,6 +73,9 @@ void setup()
   
   // KWH interrupt attached to IRQ 1 = D1 = GPIO5
   attachInterrupt(digitalPinToInterrupt(optical), onPulse, FALLING);
+
+  // avoid first 0 submission
+  lastMessage = millis();
 }
 
 void loop()
@@ -80,6 +84,7 @@ void loop()
   timeElapsed = currentTime - lastMessage;
 
   if (timeElapsed >= 5000) { // every 5 seconds
+    lastMessage = millis();
     // connect to MQTT server
     if (!client.connected()) {
       Serial.print("Attempting MQTT connection...");
@@ -97,8 +102,8 @@ void loop()
      // publish new reading
     client.publish(power_topic, String(power/1000.0).c_str(), true);
     client.publish(energy_topic, String(elapsedkWh).c_str(), true);
-    lastMessage = millis();
   } else {
+    delay(100);
     // Serial.println("Not time to publish yet, waiting");
   } // end if it's time to publish
 }
