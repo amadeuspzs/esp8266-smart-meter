@@ -18,7 +18,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Power measurement
-int jouleCount = 0;
+volatile int jouleCount = 0;
 
 // Used to track MQTT message publication
 unsigned long currentTime, lastMessage, timeElapsed;
@@ -84,13 +84,19 @@ void loop()
 
     // reset timer
     lastMessage = currentTime;
+
+    // detach interrupt while working with the shared
+    // jouleCount variable
+    detachInterrupt(digitalPinToInterrupt(optical));
     
     // calculate power
-    power = jouleCount / (timeElapsed/1000);
+    power = float(jouleCount) / (float(timeElapsed)/1000.0);
     
     // reset counter
     jouleCount = 0;
-    
+
+    // re-attach interrupt
+    attachInterrupt(digitalPinToInterrupt(optical), onPulse, FALLING);
 
     // connect to MQTT server
     if (!client.connected()) {
