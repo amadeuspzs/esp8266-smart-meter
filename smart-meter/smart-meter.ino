@@ -41,12 +41,17 @@ void setup()
   }
     
   // switch on WiFi
+  WiFi.mode(WIFI_STA);
   WiFi.hostname(wifi_hostname);
   WiFi.begin(wifi_ssid, wifi_password);
   
+  int count = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(100);
     if (debug) Serial.print(".");
+    count++;
+    // wait for 30 seconds then reset
+    if (count > 300) ESP.restart();
   }
 
   if (debug) {
@@ -91,15 +96,20 @@ void loop()
         if (debug) {
           Serial.print("failed, rc=");
           Serial.print(client.state());
-          Serial.println(" try again in 5 seconds");
+          Serial.println(" performing device reset");
         }
-        // Wait 5 seconds before retrying
-        delay(5000);
+        // Reset the board if you can't connnect
+        ESP.restart();
       } //end if client.connect
     } // end if client.connected
-    if (debug) Serial.println("Publishing to MQTT...");    
+    
     // publish new reading
-    client.publish(power_topic, String(power).c_str(), true);
+    if (power <= maxpower && !isinf(power)) {
+      if (debug) Serial.println("Publishing to MQTT...");      
+      client.publish(power_topic, String(power).c_str(), true);
+    } else {
+      if (debug) Serial.println("Bad reading... skipping");
+    }
   } else {
     delay(100);
   } // end if it's time to publish 
