@@ -80,9 +80,14 @@ void loop()
 
     // Calculate optical power (W)
     T = (timeElapsed)/1e3; // in s
+
+    // disable interrupts while reading/writing pulses
+    noInterrupts();
     power = numPulses * (3600 * ppwh) / T;
     numPulses = 0; // reset number of pulses
-
+    // re-enable interrupts
+    interrupts();
+    
     if (debug) {
       Serial.print(power,3);
       Serial.println(" W");
