@@ -18,33 +18,33 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Used to measure power.
-unsigned long pulseTime, lastTime;
+volatile unsigned long numPulses = 0;
 
 // Used to track MQTT message publication
 unsigned long currentTime, lastMessage, timeElapsed;
 
 // power
 double power, T;
-    
+
 void setup()
 {
   if (debug) {
     Serial.begin(115200);
     while (!Serial) {}
-  
+
     Serial.setDebugOutput(true);
-  
+
     Serial.print("Welcome ");
     Serial.println(device);
     Serial.print("Connecting to ");
     Serial.println(wifi_ssid);
   }
-    
+
   // switch on WiFi
   WiFi.mode(WIFI_STA);
   WiFi.hostname(wifi_hostname);
   WiFi.begin(wifi_ssid, wifi_password);
-  
+
   int count = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(100);
@@ -59,7 +59,7 @@ void setup()
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
-  }  
+  }
   // configure MQTT server
   client.setServer(mqtt_server, 1883);
 
@@ -77,16 +77,17 @@ void loop()
 
   if (timeElapsed >= 5000) { // every 5 seconds
     lastMessage = millis();
-  
+
     // Calculate optical power (W)
-    T = (pulseTime - lastTime)/1000000.0; // in s
-    power = (3600 * ppwh) / T;
+    T = (timeElapsed)/1e3; // in s
+    power = numPulses * (3600 * ppwh) / T;
+    numPulses = 0; // reset number of pulses
 
     if (debug) {
       Serial.print(power,3);
       Serial.println(" W");
     }
-        
+
     // connect to MQTT server
     if (!client.connected()) {
       if (debug) Serial.print("Attempting MQTT connection...");
@@ -102,17 +103,17 @@ void loop()
         ESP.restart();
       } //end if client.connect
     } // end if client.connected
-    
+
     // publish new reading
     if (power <= maxpower && !isinf(power)) {
-      if (debug) Serial.println("Publishing to MQTT...");      
+      if (debug) Serial.println("Publishing to MQTT...");
       client.publish(power_topic, String(power).c_str(), true);
     } else {
       if (debug) Serial.println("Bad reading... skipping");
     }
   } else {
     delay(100);
-  } // end if it's time to publish 
+  } // end if it's time to publish
 
 }
 
@@ -120,7 +121,6 @@ void loop()
 // Needs ICACHE_RAM_ATTR for esp8266 architecture
 ICACHE_RAM_ATTR void onPulse()
 {
-  //used to measure time between pulses.
-  lastTime = pulseTime;
-  pulseTime = micros();
+  //used to measure number of pulses
+  numPulses+=1;
 }
