@@ -24,7 +24,7 @@ volatile unsigned long numPulses = 0;
 unsigned long currentTime, lastMessage, timeElapsed;
 
 // power
-double power, T;
+double power;
 
 void setup()
 {
@@ -60,10 +60,11 @@ void setup()
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
   }
+  
   // configure MQTT server
   client.setServer(mqtt_server, 1883);
 
-  // KWH interrupt attached to IRQ 1 = D1 = GPIO5
+  // kWh interrupt attached to IRQ 1 = D1 = GPIO5
   attachInterrupt(digitalPinToInterrupt(optical), onPulse, FALLING);
 
   // avoid first 0 submission
@@ -75,19 +76,17 @@ void loop()
   currentTime = millis();
   timeElapsed = currentTime - lastMessage;
 
-  if (timeElapsed >= 5000) { // every 5 seconds
+  // if it's time to sample power
+  if (timeElapsed >= sampling_window) {
     lastMessage = millis();
-
-    // Calculate optical power (W)
-    T = (timeElapsed)/1e3; // in s
 
     // disable interrupts while reading/writing pulses
     noInterrupts();
-    power = numPulses * (3600 * ppwh) / T;
+    power = numPulses * (Jpp) / (timeElapsed/1e3);
     numPulses = 0; // reset number of pulses
     // re-enable interrupts
     interrupts();
-    
+
     if (debug) {
       Serial.print(power,3);
       Serial.println(" W");
@@ -110,14 +109,14 @@ void loop()
     } // end if client.connected
 
     // publish new reading
-    if (power <= maxpower && !isinf(power)) {
-      if (debug) Serial.println("Publishing to MQTT...");
-      client.publish(power_topic, String(power).c_str(), true);
-    } else {
-      if (debug) Serial.println("Bad reading... skipping");
-    }
-  } else {
-    delay(100);
+    // if (power <= maxpower && !isinf(power)) {
+    //   if (debug) Serial.println("Publishing to MQTT...");
+    client.publish(power_topic, String(power).c_str(), true);
+    // } else {
+    //   if (debug) Serial.println("Bad reading... skipping");
+    // }
+  // } else {
+  //   delay(100);
   } // end if it's time to publish
 
 }

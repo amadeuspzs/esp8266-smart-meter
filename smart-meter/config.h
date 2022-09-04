@@ -6,10 +6,14 @@
 #define wifi_password "PASSWORD"
 
 // Sensor configuration
-#define optical D1
-#define ppwh 1/3.2 //3200 pulses/kWh = 1/3.2 pulse per Wh
-#define maxpower 24000 // max power (W) you should see, for low pass filtering
+#define optical 13
+#define ppkWh 3200.0 // pulses per kWh from smart meter
+#define resolution 50.0 // required resolution of sampling, in W
 
 // Reporting
 #define mqtt_server "0.0.0.0"
 #define power_topic device "/power"
+
+// Variable calculations
+#define Jpp 3600.0 / (ppkWh/1000.0) // Joules per pulse
+#define sampling_window 1000.0 * (Jpp / resolution) // ms
