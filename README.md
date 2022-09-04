@@ -17,7 +17,7 @@ Pulses are in units of pulses per kWh, and I have tested this sketch with two sy
 
 Working in Wh we have 1 ppWh and 3.2 ppWh.
 
-$$Wh = J/s * 60*60 s = 3600J$$
+$$Wh = J/s * (60*60)s = 3600J$$
 
 The resolution of the two systems (in Joules per pulse - Jpp) is therefore:
 
@@ -63,4 +63,6 @@ The sampling window can be calculate from the required resolution:
 
 $$window = Jpp / resolution $$
 
-e.g. For a 50W measurement resolution: $$ window = 3600 / 50  = 72 seconds $$
+e.g. For a 50W measurement resolution:
+
+$$window = 3600 / 50  = 72 seconds$$
