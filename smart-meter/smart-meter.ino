@@ -59,6 +59,11 @@ void setup()
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.println("");
+    Serial.print("Sampling resolution (W): ");
+    Serial.println(resolution);
+    Serial.print("Sampling period (s): ");
+    Serial.println(sampling_window/1000.0);
   }
   
   // configure MQTT server
@@ -88,6 +93,8 @@ void loop()
     interrupts();
 
     if (debug) {
+      Serial.print("Time elapsed (s): ");
+      Serial.println(timeElapsed/1e3);
       Serial.print(power,3);
       Serial.println(" W");
     }
